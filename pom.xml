@@ -14,6 +14,8 @@
     <modules>
         <module>raml-maven-plugin</module>
         <module>raml-generator-core</module>
+        <module>raml-io</module>
+        <module>raml-parser</module>
     </modules>
 
     <dependencyManagement>

@@ -14,20 +14,21 @@
 
 
     <dependencies>
-
         <dependency>
             <groupId>org.raml</groupId>
             <artifactId>raml-parser</artifactId>
-            <version>0.8.12</version>
         </dependency>
 
         <dependency>
-            <artifactId>raml-io</artifactId>
-            <groupId>uk.gov.justice</groupId>
-            <version>${project.version}</version>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-    
+
 </project>

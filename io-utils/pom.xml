@@ -9,30 +9,28 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>raml-io</artifactId>
-
+    <artifactId>io-utils</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.raml</groupId>
-            <artifactId>raml-parser</artifactId>
-            <version>0.8.12</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>3.0.22</version>
         </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
-
         <dependency>
-            <groupId>net.trajano.commons</groupId>
-            <artifactId>commons-testing</artifactId>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

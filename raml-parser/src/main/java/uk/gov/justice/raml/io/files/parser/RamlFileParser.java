@@ -7,35 +7,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
+
 /**
- * Takes a list of file paths and loads the files and parses them into a @code List<raml>
- *
- * Created by jcooke on 27/01/16.
+ * Utility class for parsing RAML files.
  */
 public class RamlFileParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RamlFileParser.class);
 
-    public RamlFileParser() {
+    /**
+     * Takes a collection of file paths, loads the files and parses them into a {@link Raml} objects.
+     *
+     * @param baseDir the base directory to load the files from
+     * @param paths   the files to parse
+     * @return the {@link Raml} models
+     */
+    public Collection<Raml> parse(final Path baseDir, final Collection<Path> paths) {
 
-        LOGGER.debug("RamlLoader created");
+        FileResourceLoader loader = new FileResourceLoader(baseDir.toFile());
 
-    }
-
-    public List<Raml> loadRaml(List<Path> ramlURIs) {
-
-
-        return ramlURIs
-                .stream()
-                .map(aFile -> {
-                    LOGGER.info(new StringBuilder().append("Loading file ").append(aFile).toString());
-
-                    return new RamlDocumentBuilder(new FileResourceLoader(aFile.toFile().getParent())).build(aFile.toFile().getName());
-                })
+        return paths.stream()
+                .map(path -> parse(loader, path))
                 .collect(Collectors.toList());
     }
 
+    private Raml parse(final FileResourceLoader loader, Path path) {
+        LOGGER.info(format("Loading file %s", path.toString()));
+        return new RamlDocumentBuilder(loader)
+                .build(path.toFile().getName());
+    }
 }

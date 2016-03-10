@@ -16,9 +16,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
- * Created by david on 04/03/16.
+ * Maven plugin harness test for the {@link GenerateMojo} class.
  */
-public class RamlJaxrsGenerateTest extends BetterAbstractMojoTestCase {
+public class GenerateMojoTest extends BetterAbstractMojoTestCase {
 
 
     public void testShouldGenerateFromValidRaml() throws Exception {

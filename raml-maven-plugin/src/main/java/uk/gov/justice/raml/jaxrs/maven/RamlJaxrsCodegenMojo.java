@@ -10,11 +10,14 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import uk.gov.justice.raml.core.Configuration;
 import uk.gov.justice.raml.core.Generator;
+import uk.gov.justice.raml.io.FileTreeScanner;
+import uk.gov.justice.raml.io.files.parser.RamlFileParser;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.util.Collection;
 
 import static java.text.MessageFormat.format;
@@ -23,16 +26,10 @@ import static org.apache.maven.plugins.annotations.ResolutionScope.COMPILE_PLUS_
 @Mojo(name = "generate", requiresProject = true, threadSafe = false, requiresDependencyResolution = COMPILE_PLUS_RUNTIME, defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 public class RamlJaxrsCodegenMojo extends AbstractMojo {
 
-    private static final String RAML_HEADER = "#%RAML";
-    private static final String RAML_EXTENSION = "raml";
     private static final String FAILED_TO_CLEAN_DIRECTORY = "Failed to clean directory: {0}";
-    private static final String GENERATING_JAVA_CLASSES = "Generating Java classes from: {0}";
-    private static final String FAILED_TO_CREATE_DIRECTORY = "Failed to create directory: {0}";
     private static final String LOOKING_FOR_RAML_FILES = "Looking for RAML files in and below: {0}";
     private static final String SOURCE_DIRECTORY_MUST_BE_PROVIDED = "SourceDirectory must be provided";
-    private static final String ERROR_GENERATING_JAVA_CLASSES = "Error generating Java classes from: {0}";
     private static final String THE_PROVIDED_PATH_DOESN_T_REFER_TO_A_VALID_DIRECTORY = "The provided path doesn''t refer to a valid directory: {0}";
-    private static final String DOES_NOT_SEEM_TO_BE_RAML_ROOT_FILE = "{0} does not seem to be RAML root file -skipped(first line should start from #%RAML 0.8";
 
     private Generator generator;
 
@@ -90,22 +87,14 @@ public class RamlJaxrsCodegenMojo extends AbstractMojo {
         }
     }
 
-    private void process(Collection<File> ramlFiles) throws MojoExecutionException {
-        File currentSourcePath = null;
-
+    private void process(Collection<Path> ramlFiles) throws MojoExecutionException {
         try {
-            for (final File ramlFile : ramlFiles) {
-                currentSourcePath = ramlFile;
-                String raml = FileUtils.readFileToString(ramlFile);
-                if (raml != null && raml.startsWith(RAML_HEADER)) {
-                    getLog().info(format(GENERATING_JAVA_CLASSES, ramlFile));
-                    generator.run(raml, configuration());
-                } else {
-                    getLog().info(format(DOES_NOT_SEEM_TO_BE_RAML_ROOT_FILE, ramlFile));
-                }
-            }
+            new RamlFileParser()
+                    .parse(sourceDirectory.toPath(), ramlFiles)
+                    .stream()
+                    .forEach(raml -> generator.run(raml, configuration()));
         } catch (final Exception e) {
-            throw new MojoExecutionException(format(ERROR_GENERATING_JAVA_CLASSES, currentSourcePath), e);
+            throw new MojoExecutionException("Error while running generator", e);
         }
     }
 
@@ -127,18 +116,16 @@ public class RamlJaxrsCodegenMojo extends AbstractMojo {
     private void prepare(File outputDirectory) throws MojoExecutionException {
         try {
             FileUtils.forceMkdir(outputDirectory);
-        } catch (final IOException ioe) {
-            throw new MojoExecutionException(format(FAILED_TO_CREATE_DIRECTORY, outputDirectory), ioe);
-        }
-
-        try {
             FileUtils.cleanDirectory(outputDirectory);
         } catch (final IOException ioe) {
             throw new MojoExecutionException(format(FAILED_TO_CLEAN_DIRECTORY, outputDirectory), ioe);
         }
     }
 
-    private Collection<File> ramlFiles() throws MojoExecutionException {
+    private Collection<Path> ramlFiles() throws MojoExecutionException {
+
+        final String[] includes = {"**/*.raml"};
+        final String[] excludes = {};
 
         if (!sourceDirectory.isDirectory()) {
             throw new MojoExecutionException(
@@ -147,7 +134,11 @@ public class RamlJaxrsCodegenMojo extends AbstractMojo {
 
         getLog().info(format(LOOKING_FOR_RAML_FILES, sourceDirectory));
 
-        return FileUtils.listFiles(sourceDirectory, new String[]{RAML_EXTENSION}, true);
+        try {
+            return new FileTreeScanner().find(sourceDirectory.toPath(), includes, excludes);
+        } catch (IOException ex) {
+            throw new MojoExecutionException("Failed to scan for RAML files", ex);
+        }
     }
 
     void setSourceDirectory(File sourceDirectory) {

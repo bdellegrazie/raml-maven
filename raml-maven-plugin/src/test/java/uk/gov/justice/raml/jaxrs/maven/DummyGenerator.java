@@ -1,5 +1,7 @@
 package uk.gov.justice.raml.jaxrs.maven;
 
+import org.raml.emitter.RamlEmitter;
+import org.raml.model.Raml;
 import uk.gov.justice.raml.core.Configuration;
 import uk.gov.justice.raml.core.Generator;
 
@@ -13,17 +15,12 @@ import java.nio.file.Paths;
 import java.util.Set;
 
 /**
- * Created by david on 04/03/16.
+ * Generator for testing - the RAML and configuration are dumped to a JSON file.
  */
 public class DummyGenerator implements Generator {
 
-    private String raml;
-    private Configuration configuration;
-
     @Override
-    public Set<String> run(String raml, Configuration configuration) {
-        this.raml = raml;
-        this.configuration = configuration;
+    public Set<String> run(Raml raml, Configuration configuration) {
 
         Path outputPath = Paths.get(configuration.getOutputDirectory().getAbsolutePath(), "example.json");
         try {
@@ -31,7 +28,7 @@ public class DummyGenerator implements Generator {
             OutputStream outputStream = Files.newOutputStream(outputPath);
             JsonWriter writer = Json.createWriter(outputStream);
             writer.writeObject(Json.createObjectBuilder()
-                            .add("raml", raml)
+                    .add("raml", new RamlEmitter().dump(raml))
                             .add("configuration", Json.createObjectBuilder()
                                     .add("basePackageName", configuration.getBasePackageName())
                                     .add("sourceDirectory", configuration.getSourceDirectory().getPath())

@@ -10,17 +10,23 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.raml.emitter.RamlEmitter;
+import org.raml.model.Raml;
 import uk.gov.justice.raml.core.Configuration;
 import uk.gov.justice.raml.core.Generator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -73,7 +79,7 @@ public class RamlJaxrsCodegenMojoTest {
         pluginMojo.execute();
 
         ArgumentCaptor<Configuration> configCaptor = ArgumentCaptor.forClass(Configuration.class);
-        verify(generator).run(any(String.class), configCaptor.capture());
+        verify(generator).run(any(Raml.class), configCaptor.capture());
         Configuration configuration = configCaptor.getValue();
         assertThat(configuration.getBasePackageName(), is(basePackageName));
         assertThat(configuration.getSourceDirectory(), is(sourceDirectory.getRoot()));
@@ -91,35 +97,53 @@ public class RamlJaxrsCodegenMojoTest {
     }
 
     @Test
-    public void shouldPassRAMLFilesToGenerator() throws Exception {
+    public void shouldPassRamlDocumentsToGenerator() throws Exception {
 
         File ramlFile = sourceDirectory.newFile("file1.raml");
-        String ramlString1 = "#%RAML 0.8 abcd";
+        String ramlString1 = "#%RAML 0.8\nbaseUri: \"http://a:8080/\"\n";
         FileUtils.write(ramlFile, ramlString1);
         File ramlFile2 = sourceDirectory.newFile("file2.raml");
-        String ramlString2 = "#%RAML 0.8 efdh";
+        String ramlString2 = "#%RAML 0.8\nbaseUri: \"http://b:8080/\"\n";
         FileUtils.write(ramlFile2, ramlString2);
         pluginMojo.execute();
 
-        verify(generator).run(eq(ramlString1), any(Configuration.class));
-        verify(generator).run(eq(ramlString2), any(Configuration.class));
+        ArgumentCaptor<Raml> ramlCaptor = ArgumentCaptor.forClass(Raml.class);
+        verify(generator, times(2)).run(ramlCaptor.capture(), any(Configuration.class));
+
+        List<Raml> ramls = ramlCaptor.getAllValues();
+
+        RamlEmitter emitter = new RamlEmitter();
+        assertThat(
+                ramls.stream()
+                        .map(emitter::dump)
+                        .collect(Collectors.toSet()),
+                containsInAnyOrder(
+                        equalTo(ramlString1),
+                        equalTo(ramlString2)
+                )
+        );
     }
 
     @Test
-    public void shouldNotProcessEmptyFile() throws Exception {
+    public void shouldCreateEmptyRamlDocumentFromEmptyFile() throws Exception {
         sourceDirectory.newFile("file3.raml");
         pluginMojo.execute();
-        verifyZeroInteractions(generator);
+
+        ArgumentCaptor<Raml> ramlCaptor = ArgumentCaptor.forClass(Raml.class);
+        verify(generator).run(ramlCaptor.capture(), any(Configuration.class));
+
+        Raml raml = ramlCaptor.getValue();
+
+        RamlEmitter emitter = new RamlEmitter();
+        assertThat(emitter.dump(raml), equalTo("#%RAML 0.8\n"));
     }
 
-    @Test
-    public void shouldNotProcessFileWithNoRamlHeader() throws Exception {
+    @Test(expected = MojoExecutionException.class)
+    public void shouldNotProcessInvalidRamlFile() throws Exception {
 
         File ramlFile = sourceDirectory.newFile("file1.raml");
         FileUtils.write(ramlFile, "abcde");
         pluginMojo.execute();
-        verifyZeroInteractions(generator);
-
     }
 
     @Test

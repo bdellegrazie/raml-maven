@@ -6,6 +6,6 @@ import java.util.Set;
 
 public interface Generator {
 
-    Set<String> run(Raml raml, Configuration configuration);
+    Set<String> run(Raml raml, GeneratorConfig generatorConfig);
 
 }

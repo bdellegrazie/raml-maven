@@ -2,7 +2,7 @@ package uk.gov.justice.raml.jaxrs.maven;
 
 import org.raml.emitter.RamlEmitter;
 import org.raml.model.Raml;
-import uk.gov.justice.raml.core.Configuration;
+import uk.gov.justice.raml.core.GeneratorConfig;
 import uk.gov.justice.raml.core.Generator;
 
 import javax.json.Json;
@@ -20,9 +20,9 @@ import java.util.Set;
 public class DummyGenerator implements Generator {
 
     @Override
-    public Set<String> run(Raml raml, Configuration configuration) {
+    public Set<String> run(Raml raml, GeneratorConfig generatorConfig) {
 
-        Path outputPath = Paths.get(configuration.getOutputDirectory().getAbsolutePath(), "example.json");
+        Path outputPath = Paths.get(generatorConfig.getOutputDirectory().toString(), "example.json");
         try {
             Files.createDirectories(outputPath.getParent());
             OutputStream outputStream = Files.newOutputStream(outputPath);
@@ -30,9 +30,9 @@ public class DummyGenerator implements Generator {
             writer.writeObject(Json.createObjectBuilder()
                     .add("raml", new RamlEmitter().dump(raml))
                             .add("configuration", Json.createObjectBuilder()
-                                    .add("basePackageName", configuration.getBasePackageName())
-                                    .add("sourceDirectory", configuration.getSourceDirectory().getPath())
-                                    .add("outputDirectory", configuration.getOutputDirectory().getPath())
+                                    .add("basePackageName", generatorConfig.getBasePackageName())
+                                    .add("sourceDirectory", generatorConfig.getSourceDirectory().toString())
+                                    .add("outputDirectory", generatorConfig.getOutputDirectory().toString())
                             )
                             .build());
             writer.close();
